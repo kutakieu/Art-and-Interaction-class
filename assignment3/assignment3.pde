@@ -1,5 +1,6 @@
 // ID: u5934839 (replace with your own uni ID)
 // Name: Taku Ueki (replace with your name)
+
 int blockSize = height/16;
 int pixelSize = blockSize/16;
 PImage blockImg, marioRight, marioLeft, marioJumpRight, marioJumpLeft; 
