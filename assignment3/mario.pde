@@ -1,8 +1,10 @@
 class Mario{
   int X, Y;
+  int step = 8;
   int blockSize = height/16;
   int walkCount, direction;
-  boolean jumping;
+  boolean jumping = false;
+  boolean right = false, left = false, jump = false;
   int goUp, goDown;
   PImage img;
   PImage blockImg, marioRight, marioLeft, marioJumpRight, marioJumpLeft; 
@@ -41,47 +43,76 @@ class Mario{
   }
   
   void draw(){
-    if(jumping)
-      jumping();
+    walk();
+    if(jumping)jumping();
     image(img, X, Y, blockSize, blockSize);
   }
   
   void update(int x, int y){
     X += x;
     Y -= y;
+    if(X < 0)
+      X = 0;
+    else if(X > width)
+      X = width;
   }
   void stand(){
-    img = direction > 0 ? marioRight : marioLeft;
+    img = direction > 0 ? marioRight : marioLeft; 
     walkCount = 0;
   }
   
   void walk(int direction){
-    if(jumping)
-      update(16*direction, 0);
       
-    X += 16*direction;
+    //X += step*direction;
+    //update(step*direction, 0);
     img = direction > 0 ? walkRight[walkCount%3] : walkLeft[walkCount%3];
     walkCount++;
     this.direction = direction;
   }
+  void walk(){
+    int horizontal = 0;
+    if(right){
+      horizontal += step;
+      img = walkRight[(walkCount%6)/2];
+      walkCount++;
+    }
+    if(left){
+      horizontal -= step;
+      img = walkLeft[(walkCount%6)/2];
+      walkCount++;
+    }
+    update(horizontal, 0);
+    
+  }
   
   void jump(){
-    jumping = true;
-    goUp = 100;
-    goDown = 1;
-    img = direction > 0 ? marioJumpRight : marioJumpLeft;
+    if(!jumping){
+      jumping = true;
+      goUp = 100;
+      goDown = 1;
+      img = direction > 0 ? marioJumpRight : marioJumpLeft;
+    }
   }
   void jumping(){
     goUp*=0.6;
+    int horizontal = 0;
+    if(right){
+      horizontal += step;
+      img = marioJumpRight;
+    }else if(left){
+      horizontal -= step;
+      img = marioJumpLeft;
+    }
+      
     if(goUp>1)
-      update(0,goUp);
+      update(horizontal,goUp);
     else{
-      goDown*=7;
+      goDown*=4;
       if(blockSize * 14 < Y + goDown){
-        update(0, (blockSize*13 - Y)*(-1));
+        update(horizontal, (blockSize*13 - Y)*(-1));
         jumping = false;
       }else
-        update(0,goDown*(-1));
+        update(horizontal,goDown*(-1));
     }
       
   }
