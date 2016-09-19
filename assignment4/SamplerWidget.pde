@@ -11,10 +11,12 @@ class SamplerWidget {
   }
 
   // methods
-  void trigger(float rate) {
+  void trigger(float rate, float a) {
     // trigger the "envelope" so we can hear it
     sample.rate(rate);
     sample.loop();
-    env.play(sample, .001, .1, .5, 2);
+    sample.amp(a);
+    //env.play(sample, .001, .1, .1, .5);
+    env.play(sample, .5, .1, .1, .001);
   }
 }

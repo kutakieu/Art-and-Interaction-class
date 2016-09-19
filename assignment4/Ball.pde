@@ -7,12 +7,18 @@ class Ball{
   Body body;
   int octave;
   char noteName;
+  float angle;
+  float temp_angle;
+  int size;
+  SamplerWidget sam;
+  boolean eat;
   
   Ball(int x, int y, int c, int r){
     this(x, y, c, (int)random(-5,5), (int)random(-5,5), r);
   }
   
   Ball(int x, int y, int c, int sX, int sY, int r){
+    sam = sampler[c];
     X = x;    Y = y;
     col = colors[c];
     noteName = noteNames[c];
@@ -22,46 +28,67 @@ class Ball{
     note = colorToNote(c);
     R = r;
     speedX = sX;    speedY = sY;
-    makeBody(x, y, r);
-    body.setUserData(this);
-      
+    angle = random(0.7,1)/10;
+    //makeBody(x, y, r);
+    //body.setUserData(this);
+    size = 5;
     println(octave);
+    triggerVoice(1, 0.4);
+    eat = false;
   }
   
   void draw(){
+    size+=10;
+    temp_angle += angle;
+    if(temp_angle >= TWO_PI)
+      temp_angle = temp_angle % TWO_PI;
     this.update();
+    fill(0,0,0,0);
+    stroke(0,0,0,0);
+    strokeWeight(0);
+    pushMatrix();
+    translate(X,Y);
+    rotate(temp_angle);
+    ellipse(0,0,size<R ? size : R, size<R ? size : R);
     fill(col);
-    stroke(col);
-    strokeWeight(1);
-    ellipse(X,Y,R,R);
-    fill(0);
-    textSize(32);
-    text(noteName,X,Y);
+    textSize(size<R ? size : R);
+    text(noteName,-R*0.375,R*0.375);
+    popMatrix();
   }
-  void update(){
-    //speedX *= 0.9999999;
-    //speedY *= 0.9999999;
-    X += speedX;
-    Y += speedY;
-    if(X > width){
-      X = width - (X - width);
-      speedX *= -1;
-      trigger();
-    }else if(X < 0){
-      X *= -1;
-      speedX *= -1;
-      trigger();
-    }
+  void update(){ 
     
-    if(Y > height){
-      Y = height - (Y - height);
-      speedY *= -1;
-      trigger();
-    }else if(Y < 0){
-      Y *= -1;
-      speedY *= -1;
-      trigger();
-    }
+      if(eat){
+        X += (int)((mouthCenterX - X)*0.1);
+        Y += (int)((mouthCenterY - Y)*0.1);
+        R-=8;
+        if(R<=0)
+          R = 1;
+      }else{
+        if(mouth_open_wide)
+          if(dist(X,Y,mouthCenterX,mouthCenterY) < 200)
+            eat = true; 
+        X += speedX;
+        Y += speedY;
+        if(X > width){
+          X = width - (X - width);
+          speedX *= -1;
+          trigger();
+        }else if(X < 0){
+          X *= -1;
+          speedX *= -1;
+          trigger();
+        }
+        
+        if(Y > height){
+          Y = height - (Y - height);
+          speedY *= -1;
+          trigger();
+        }else if(Y < 0){
+          Y *= -1;
+          speedY *= -1;
+          trigger();
+        }
+     }
   }
   void display() {
     // We look at each body and get its screen position
@@ -108,8 +135,6 @@ class Ball{
     body.createFixture(fd);
     Vec2 v = new Vec2(speedX, speedY);
     body.setLinearVelocity(v);
-    //body.setAngularVelocity(random(-10, 10));
-    //body.setAngularVelocity(100);
   }
   
   int colorToNote(int c){
@@ -132,5 +157,18 @@ class Ball{
   
   void trigger(){
     synth.trigger(note);
+    //sam.trigger(1);
+  }
+  void triggerVoice(float i, float a){
+    sam.trigger(i, a);
+  }
+  
+  boolean remove(){
+    if(R <= 1){
+      triggerVoice(0.5, 1);
+      return true;
+    }
+    else
+      return false;
   }
 }

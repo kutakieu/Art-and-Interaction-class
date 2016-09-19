@@ -21,12 +21,14 @@ PImage mouthImg;
 Capture cam2;
 Capture cam;
 Histogram grayHist;
-boolean mouth_open;
+boolean mouth_open_small, mouth_open_wide;
+int mouthCenterX, mouthCenterY;
+int directionX, directionY;
 
 
 Box2DProcessing box2d;
 SynthWidget synth;
-SamplerWidget sampler;
+SamplerWidget[] sampler = new SamplerWidget[8];
 NoiseWidget noise;
 
 ArrayList<Boundary> boundaries;
@@ -36,16 +38,23 @@ Ball ball;
 ArrayList<Ball> balls = new ArrayList<Ball>();
 color[] colors = {color(255,51,51,200), color(255,153,51,200), color(255,255,51,200), color(51,255,51,200), color(51,153,255,200), color(51,255,255,200), color(255,51,255,200)};
 char[] noteNames = {'C','D','E','F','G','A','B'};
+boolean cameraAvailable;
+
 void setup() {
   //fullScreen();
   background(0);
+  fill(255);
+  textSize(32);
+  text("loading...", width/2,height/2);
+  text("open your mouth to play music", width/2,height/2);
   size(1280, 720);
 
   String[] cameras = Capture.list();
   if (cameras.length == 0) {
     println("There are no cameras available for capture.");
-    exit();
-  }
+    cameraAvailable = false;
+  }else
+    cameraAvailable = true;
   cam = new Capture(this, width, height);
   cam2 = new Capture(this, 320,180);
   cam.start();    
@@ -58,7 +67,14 @@ void setup() {
   grayHist = opencv.findHistogram(opencv.getGray(), 256);
   
   noise = new NoiseWidget(this);
-  //sampler = new SamplerWidget(this, "gong.mp3");
+  sampler[0] = new SamplerWidget(this, "do.mp3");
+  sampler[1] = new SamplerWidget(this, "re.mp3");
+  sampler[2] = new SamplerWidget(this, "mi.mp3");
+  sampler[3] = new SamplerWidget(this, "fa.mp3");
+  sampler[4] = new SamplerWidget(this, "so.mp3");
+  sampler[5] = new SamplerWidget(this, "la.mp3");
+  sampler[6] = new SamplerWidget(this, "ti.mp3");
+  sampler[7] = new SamplerWidget(this, "do_.mp3");
   synth = new SynthWidget(this);
   
   box2d = new Box2DProcessing(this);
@@ -71,11 +87,17 @@ void setup() {
   //boundaries.add(new Boundary(0,height,width*2,1));
   //boundaries.add(new Boundary(width,0,1,height*2));
   
-  
+  text('c',width/2,height/2);
+  directionX = 1;
+  directionY = -1;
 }
 
 void draw() {
-  //background(0);
+  if(!cameraAvailable){
+    background(0);
+    fill(255);
+    text("this program uses camera, please turn on your camera.", width/2,height/2);
+  }else{
   
   cam.read();
   cam2.read();
@@ -113,47 +135,58 @@ void draw() {
       //else
       //  mouth_open = false;
   }
-  if(mouth_open)
-    println("mouth is open!!!");
+  if(mouth_open_wide)
+    println("mouth is open widely!!!");
+  if(mouth_open_small)
+    println("mouth is open small!!!");
   
   //box2d.step();
   
-  if(mousePressed){
-    radius = 10 + (frameCount - clickStart);
-    fill(colors[radius%42/6]);
-    ellipse(mouseX,mouseY,radius, radius);
-  }
-  if(mouth_open && random(1)> 0.3){
-    ball = new Ball((mouth.x + mouth.width/2)*4, (mouth.y + mouth.height/2)*4,(int)random(7), (int)random(-5,5), (int)random(10,30), (int)random(30,40));
-  balls.add(ball);
+  //if(mousePressed){
+  //  radius = 10 + (frameCount - clickStart);
+  //  fill(colors[radius%42/6]);
+  //  ellipse(mouseX,mouseY,radius, radius);
+  //}
+  if(mouth_open_small && random(1) < 0.2){
+    ball = new Ball((mouth.x + mouth.width/2)*4, (mouth.y + mouth.height/6)*4,(int)random(7), (int)random(directionX*10,directionX*20), (int)random(directionY*20,directionY*10), (int)random(40,80));
+    balls.add(ball);
   }
   
-  for(Ball ball : balls)
-    ball.draw();
+  //for(Ball ball : balls){
+  //  ball.draw();
+  //  if(ball.remove())
+  //    balls.remove(ball);
+  //}
+  
+  for(int i=0; i<balls.size(); i++){
+    balls.get(i).draw();
+    if(balls.get(i).remove()){
+      balls.remove(i);
+    }
+  }
     
   //for(Boundary boundary : boundaries)
   //  boundary.display();
-    
-  
+  }
 }
 
-void mousePressed(){
-  radius = 10;
-  clickStart = frameCount;
-  clicked = true;
-  println("pressed");
-}
+//void mousePressed(){
+//  radius = 10;
+//  clickStart = frameCount;
+//  clicked = true;
+//  println("pressed");
+//}
 
-void mouseReleased(){
-  if(abs(mouseX-pmouseX)/2 < 1 && abs(mouseY-pmouseY)/2 < 1)
-    ball = new Ball(mouseX, mouseY,(int)random(7), radius);
-  else
-    ball = new Ball(mouseX, mouseY,(int)random(7), (mouseX - pmouseX)/2, (mouseY - pmouseY)/2, radius);
-  balls.add(ball);
-  radius = 0;
-  clicked = false;
-  println("released");
-}
+//void mouseReleased(){
+//  if(abs(mouseX-pmouseX)/2 < 1 && abs(mouseY-pmouseY)/2 < 1)
+//    ball = new Ball(mouseX, mouseY,(int)random(7), radius);
+//  else
+//    ball = new Ball(mouseX, mouseY,(int)random(7), (mouseX - pmouseX)/2, (mouseY - pmouseY)/2, radius);
+//  balls.add(ball);
+//  radius = 0;
+//  clicked = false;
+//  println("released");
+//}
 
 void beginContact(Contact cp) {
   println("collided!!");
@@ -192,18 +225,36 @@ void createMouthImg(){
   
   grayHist = opencv.findHistogram(opencv3.getGray(), 256, false);
   
-  println("Mat height = " + grayHist.getMat().height());
-  println("Mat width = " + grayHist.getMat().width());
+  //println("Mat height = " + grayHist.getMat().height());
+  //println("Mat width = " + grayHist.getMat().width());
   for(int i=0; i<threshold; i++){
     num += grayHist.getMat().get(i,0)[0];
   }
-  println(num);
-  println(((float)(num/mouthImg.pixels.length)));
+  //println(num);
+  float mouth_open_rate = (float)(num/mouthImg.pixels.length);
+  println(mouth_open_rate);
     
-  if((float)(num/mouthImg.pixels.length) > 0.2)
-    mouth_open = true;
-  else
-    mouth_open = false;
-  //fill(125); noStroke();
-  //grayHist.draw(width/2, 0, 310, 180);
+  if(mouth_open_rate > 0.05){
+    if(mousePressed){
+      mouth_open_wide = true;
+      mouth_open_small = false;
+    }else{
+      mouth_open_small = true;
+      mouth_open_wide = false;
+    }
+    mouthCenterX = (mouth.x + mouth.width/2)*4;
+    mouthCenterY = (mouth.y + mouth.height/6)*4;
+  }else{
+    mouth_open_small = false;
+    mouth_open_wide = false;
+    if(random(1)<0.5)
+      directionX = 1;
+    else
+      directionX = -1;  
+    if(random(1)<0.5)
+        directionY = 1;
+    else
+        directionY = -1;
+    
+  }
 }

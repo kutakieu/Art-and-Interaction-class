@@ -1,4 +1,4 @@
-class SynthWidget {
+class SynthWidget{
   // class variables
   SinOsc sine;
   Env env;
@@ -8,7 +8,7 @@ class SynthWidget {
     // set up the sine object (whose class is SinOsc)
     sine = new SinOsc(p);
     env = new Env(p);
-    sine.amp(.5);
+    sine.amp(.2);
   }
 
   // methods
