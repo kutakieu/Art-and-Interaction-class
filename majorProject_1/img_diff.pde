@@ -18,6 +18,8 @@ int differentPixels=0;
 
 int index = 0;
 int counter = 0;
+int alpha1 = 255;
+int alpha2 = 50;
 boolean viewer, back_change = false;
 int dimension;
 void setup(){
@@ -35,55 +37,42 @@ void setup(){
   
   cv = new OpenCV(this, 640, 480);
   cv1 = new OpenCV(this, 640, 480);
-  cv2 = new OpenCV(this, 640, 480);
-  
-  cv.useGray();
-  cv1.useGray();
-  cv2.useGray();
+  //cv2 = new OpenCV(this, 640, 480);
 
-  //println(color(0));
-  //println(color(255));
-  //println(color(255,255,255));
 }
 
 void draw(){
   background(0);
   //println(frameCount);
+  tint(255,255);
   if (camera.available() == true) {
     camera.read();
     img = camera;
   }
   if(img != null){
     //println("here");
-    image(img, 0, 480);
+    if(viewer){
+      
+      tint(255,alpha1);
+    }
+    image(img, 0, 0);
+    
     images.add(img.get());
+    if(images.size()==61 && !viewer)
+      images.remove(0);
     if(images.size() > 60 && !viewer){
-      while(images.size()>60)
-        images.remove(0);
+      alpha1 = 255;
+      alpha2 = 0;
+      if(!imgDiff(back_img, images.get(index)))
+        while(images.size()>60)
+          images.remove(0);
     }
   }
-  //if(img!=null){
-  //byte_img = rgb2grayByte(img);
-  ////cv2.loadImage(img);
-  ////cv2.toPImage(cv2.getGray(),img);
-  ////img = cv2.getSnapshot();
-  //img_BW = byte2PImage(byte_img);
-  //image(img_BW, 0, 480);
-  
+  tint(255,255);
   if(mousePressed){
     back_img = img.get();
-    //byte_back = rgb2grayByte(back_img);
-    //back_img = byte2PImage(byte_back);
-    //back_change = true;
+
   }
-  //if(byte_back != null){
-  //  result_img = imgDiff(byte_img, byte_back, 20);
-  //  diff_img = imgDiff(byte_img, byte_back);
-  //  image(diff_img,640,480);
-  //  image(back_img,640,0);
-  //  image(result_img,0,0);
-  //}
-  
   
     
   if(back_img != null){
@@ -93,13 +82,13 @@ void draw(){
     cv.diff(img);
     //diff_img = cv.getSnapshot();
     //diff_img = cv.getSnapshot();
-    cv1.loadImage(cv.getSnapshot());
-    cv1.threshold(75);
+    cv.loadImage(cv.getSnapshot());
+    cv.threshold(75);
     //cv1.erode();
-    cv1.erode();
-    cv1.dilate();
+    cv.erode();
+    cv.dilate();
     //cv1.dilate();
-    diff_img = cv1.getSnapshot();
+    diff_img = cv.getSnapshot();
     diff_img.loadPixels();
     img.loadPixels();
     result_img.loadPixels();
@@ -120,28 +109,51 @@ void draw(){
       viewer = true;
     else 
       viewer = false;
-    image(result_img, 0, 0);
+    image(result_img, 0, 480);
     //image(cv1.getSnapshot(),0,0);
     back_change = false;
   }
-  fill(color(255,0,0));
-  textSize(30); 
-  text((float)differentPixels/dimension,100,200);
-  if(viewer)
-    text("VIEWER", 100, 150);
-  text(images.size(),100,250);
+  
+  
+  
   fill(255);
   text(frameRate,100,100);
-  if(viewer&&images.size() > 300){
-    
-    image(images.get(index),640,480);
-    index++;
-  }
-  
+  if(images.size() > 120){
+    alpha1 -= alpha1 > 150 ? 1 : 0;
+    alpha2 += alpha2 < 150 ? 1 : 0;
+    tint(255,alpha2);
+    image(images.get(index),0,0);
+    //index++;
+    images.remove(0);
+  }  
+  fill(color(255,0,0));
+  textSize(30); 
+  tint(255,255);
+  if(viewer)
+    text("VIEWER", 100, 150);
+  else
+    index=0;
+  text((float)differentPixels/dimension,100,200);
+  text(images.size(),100,250);
+  text(alpha1 + " " + alpha2, 100,300);
+}
 
-
-  
-  
+boolean imgDiff(PImage backImg, PImage img){
+  cv1.loadImage(backImg);
+  cv1.diff(img);
+  cv1.loadImage(cv1.getSnapshot());
+  cv1.threshold(75);
+  cv1.erode();
+  cv1.dilate();
+  PImage tmpImg = cv1.getSnapshot();
+  int diffs=0;
+  for(int i=0; i<dimension; i++)
+      if(diff_img.pixels[i] == #FFFFFF)
+        diffs++;
+  if((float)diffs/dimension > 0.02)
+    return true;
+  else
+    return false;
 }
 
 void mousePressed(){
